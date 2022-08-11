@@ -1,10 +1,16 @@
 const http = require("http");
+
+const app = require('express')();
+app.get('/',(req,res)=> res.sendFile(__dirname + '/index.html'));
+app.listen(9091,()=> console.log('Listening on port 9091...'));
+
 const websocketServer = require("websocket").server;
 const httpServer = http.createServer();
 
 httpServer.listen(9090,()=> console.log("Server is listening on port 9090 ..."));
 
 const clients = {};
+const games = {};
 
 const wsServer = new websocketServer({
     'httpServer': httpServer
@@ -18,6 +24,25 @@ wsServer.on('request', (request)=> {
 
     connection.on('message', (message)=> {
         const result = JSON.parse(message.utf8Data);
+        // i have received a message from the client
+
+        //a user want to create a new game
+        if(result.method === 'create') {
+            const clientId =  result.clientId;
+            const gameId = guid();
+            games[gameId] = {
+                'id': gameId,
+                'balls': 20
+            }
+
+            const payLoad = {
+                'method': 'create',
+                'game': games[gameId]
+            }
+
+            const con =  clients[clientId].connection;
+            con.send(JSON.stringify(payLoad))
+        }
 
         console.log(result);
     })
